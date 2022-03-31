@@ -1,0 +1,54 @@
+version: "3"
+
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile-nginx
+    volumes:
+      - ./symfony/:/var/www/symfony/
+    environment:
+      XDEBUG_CONFIG: remote_host=172.17.0.1 remote_port=9000 remote_enable=1
+    ports:
+      - 8001:80
+    networks:
+      - symfony
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile-php
+      args:
+        # Available [trace|debug|profile].
+        # Use Comma separated available values
+        # for multiple mode
+        # Use "off" to disable xdebug
+        - XDEBUG_MODES=debug,trace
+#        - XDEBUG_MODES=off
+        # Set the following values to overwrite the
+        # existing settings.
+        # Uncomment the following line and change value.
+        - REMOTE_HOST=host.docker.internal # Host machine IP
+        - REMOTE_PORT=9003 # IDE/Editor's listener port
+        - IDE_KEY=PHPSTORM # IDE's filter/listener key
+    environment:
+      APP_ENV: dev
+    volumes:
+      - ./symfony/:/var/www/symfony/
+      - /tmp/xdebug:/tmp/xdebug
+    networks:
+      - symfony
+    depends_on:
+      - postgres
+  postgres:
+    image: postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - ./mysql:/var/lib/mysql
+    environment:
+      POSTGRES_PASSWORD: root
+      POSTGRES_USER: root
+    networks:
+      - symfony
+networks:
+  symfony:
